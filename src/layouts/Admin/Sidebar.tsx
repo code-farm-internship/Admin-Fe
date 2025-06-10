@@ -1,50 +1,55 @@
+import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { Layout, Menu } from 'antd';
+import {
+    HomeOutlined,
+    BarChartOutlined,
+    AppstoreOutlined,
+    FolderOpenOutlined,
+    FileTextOutlined,
+    TeamOutlined,
+    MessageOutlined,
+    SlidersOutlined,
+    GiftOutlined,
+    ShopOutlined,
+} from '@ant-design/icons';
 
-const AdminSidebar = () => {
+const { Sider } = Layout;
+
+const AdminSidebar = ({ collapsed }: { collapsed: boolean }) => {
     const location = useLocation();
 
     const menuItems = [
-        { to: '/dashboard', icon: 'fa-house', label: 'Tổng quan' },
-        { to: '/dashboard/order-statistics', icon: 'fa-chart-line', label: 'Thống kê' },
-        { to: '/dashboard/products', icon: 'fa-box', label: 'Sản phẩm' },
-        { to: '/dashboard/categories', icon: 'fa-layer-group', label: 'Danh mục' },
-        { to: '/dashboard/orders', icon: 'fa-file-invoice', label: 'Đơn hàng' },
-        { to: '/dashboard/users', icon: 'fa-user-group', label: 'Người dùng' },
-        { to: '/dashboard/reviews', icon: 'fa-comments', label: 'Đánh giá' },
-        { to: '/dashboard/product-variants', icon: 'fa-sliders', label: 'Biến thể' },
-        { to: '/dashboard/vouchers', icon: 'fa-ticket', label: 'Mã giảm giá' },
+        { key: '/dashboard', icon: <HomeOutlined />, label: 'Tổng quan' },
+        { key: '/dashboard/order-statistics', icon: <BarChartOutlined />, label: 'Thống kê' },
+        { key: '/dashboard/products', icon: <AppstoreOutlined />, label: 'Sản phẩm' },
+        { key: '/dashboard/category', icon: <FolderOpenOutlined />, label: 'Danh mục' },
+        { key: '/dashboard/orders', icon: <FileTextOutlined />, label: 'Đơn hàng' },
+        { key: '/dashboard/users', icon: <TeamOutlined />, label: 'Người dùng' },
+        { key: '/dashboard/reviews', icon: <MessageOutlined />, label: 'Đánh giá' },
+        { key: '/dashboard/product-variants', icon: <SlidersOutlined />, label: 'Biến thể' },
+        { key: '/dashboard/vouchers', icon: <GiftOutlined />, label: 'Mã giảm giá' },
+        { key: '/dashboard/vendor', icon: <ShopOutlined />, label: 'Nhà cung cấp' },
     ];
 
     return (
-        <aside className='fixed left-0 top-0 z-40 h-screen w-64 border-r border-gray-200 bg-gradient-to-b from-blue-100 to-white shadow-md'>
-            <div className='flex flex-col items-center px-4 py-8'>
-                <img src='/img/logo.png' alt='Logo' className='mb-6 w-20' />
-                <h2 className='mb-6 text-lg font-bold uppercase tracking-wide text-gray-800'>Quản trị</h2>
-
-                <nav className='w-full'>
-                    <ul className='space-y-3'>
-                        {menuItems.map((item, idx) => {
-                            const isActive = location.pathname === item.to;
-                            return (
-                                <li key={idx}>
-                                    <Link
-                                        to={item.to}
-                                        className={`flex items-center gap-4 rounded-xl px-4 py-3 shadow-sm transition-all duration-200 ${
-                                            isActive
-                                                ? 'bg-blue-600 font-semibold text-white'
-                                                : 'bg-white text-gray-700 hover:bg-blue-100 hover:text-blue-600'
-                                        }`}
-                                    >
-                                        <i className={`fa-solid ${item.icon} text-md w-5`} />
-                                        <span className='text-base font-medium'>{item.label}</span>
-                                    </Link>
-                                </li>
-                            );
-                        })}
-                    </ul>
-                </nav>
+        <Sider trigger={null} collapsible collapsed={collapsed} width={240} style={{ backgroundColor: '#001529' }}>
+            <div className='flex h-16 items-center justify-center text-lg font-bold text-white'>
+                {!collapsed ? <span>AYA BOOK</span> : <span>A</span>}
             </div>
-        </aside>
+
+            <Menu
+                theme='dark'
+                mode='inline'
+                selectedKeys={[location.pathname]}
+                style={{ backgroundColor: '#001529' }}
+                items={menuItems.map((item) => ({
+                    key: item.key,
+                    icon: item.icon,
+                    label: <Link to={item.key}>{item.label}</Link>,
+                }))}
+            />
+        </Sider>
     );
 };
 
