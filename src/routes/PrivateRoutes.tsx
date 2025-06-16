@@ -17,39 +17,45 @@ import VendorEdit from '../pages/Admin/Vendor/VendorEdit';
 import ProductAdd from '../pages/Admin/Products/ProductAdd';
 import ProductEdit from '../pages/Admin/Products/ProductEdit';
 
+// import ProtectedRouteAdmin from '../components/ProtectedRouteAdmin';
+
 export const privateRoutes = [
     {
         path: '/dashboard',
-        element: <AdminLayout />,
+        element: (
+            // <ProtectedRouteAdmin>
+            <AdminLayout />
+            // </ProtectedRouteAdmin>
+        ),
         children: [
             { index: true, element: <Dashboard /> },
             { path: '', element: <Dashboard /> },
-            //cattegory
+
+            // category
             { path: 'category', element: <CategoryManager /> },
             { path: 'category/create', element: <CategoryAdd /> },
             { path: 'category/update/:id', element: <CategoryEdit /> },
-            //category
+
+            // orders
             { path: 'orders', element: <OrderManager /> },
             { path: 'order-statistics', element: <OrderStatistics /> },
 
+            // other
             { path: 'product-variants', element: <ProductVariantManager /> },
             { path: 'reviews', element: <ReviewManager /> },
             { path: 'users', element: <UserManager /> },
             { path: 'vouchers', element: <VoucherManager /> },
 
-            //vendor
+            // vendor
             { path: 'vendor', element: <VendorManager /> },
             { path: 'vendor/create', element: <VendorAdd /> },
             { path: 'vendor/update/:id', element: <VendorEdit /> },
-            //vendor
 
-            //product
+            // product
             { path: 'products', element: <ProductManager /> },
             { path: 'products/create', element: <ProductAdd /> },
-            { path: '/dashboard/products/edit/:productId', element: <ProductEdit /> },
-            //prodcut
+            { path: 'products/update/:id', element: <ProductEdit /> },
 
-            // Redirect all unknown paths under /dashboard to 404
             { path: '*', element: <Navigate to='/404' /> },
         ],
     },

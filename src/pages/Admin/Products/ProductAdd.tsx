@@ -1,204 +1,186 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import productService from '../../../services/product.service';
-import categoryService from '../../../services/category.service';
-import vendorService from '../../../services/vendor.service';
+import { Form, Input, Select, Button, message, Upload } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
 import { ICategory } from '../../../types/category';
 import { IVendor } from '../../../types/vendor';
-import axios from 'axios';
+import { createProduct } from '../../../services/product.service';
+import { getAllCategories } from '../../../services/category.service';
+import { getAllVendors } from '../../../services/vendor.service';
+
+import type { RcFile } from 'antd/es/upload';
 
 const ProductAdd = () => {
-    const [name, setName] = useState('');
-    const [author, setAuthor] = useState('');
-    const [priceMin, setPriceMin] = useState('');
-    const [priceMax, setPriceMax] = useState('');
-    const [thumbnail, setThumbnail] = useState<File | null>(null);
-    const [categoryId, setCategoryId] = useState('');
-    const [vendorId, setVendorId] = useState('');
+    const navigate = useNavigate();
+    const [form] = Form.useForm();
+    const [loading, setLoading] = useState(false);
     const [categories, setCategories] = useState<ICategory[]>([]);
     const [vendors, setVendors] = useState<IVendor[]>([]);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
-    const navigate = useNavigate();
+    const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+    const [libraryFiles, setLibraryFiles] = useState<File[]>([]);
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [catRes, vendorRes] = await Promise.all([
-                    categoryService.getAllCategories(),
-                    vendorService.getAllVendor(),
-                ]);
-                setCategories(catRes.categories || []);
-                setVendors(vendorRes || []);
-            } catch (err: unknown) {
-                console.error('Lỗi khi tải danh sách category hoặc vendor:', err);
-                setError('Không thể tải danh sách danh mục hoặc nhà cung cấp.');
+                const [categoriesData, vendorsData] = await Promise.all([getAllCategories(), getAllVendors()]);
+                setCategories(categoriesData);
+                setVendors(vendorsData);
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                message.error('Failed to load form data');
             }
         };
-
-        void fetchData();
+        fetchData();
     }, []);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError(null);
-        setSuccess(null);
+    const beforeUpload = (file: RcFile) => {
+        const isImage = file.type.startsWith('image/');
+        if (!isImage) {
+            message.error('You can only upload image files!');
+        }
+        const isLt2M = file.size / 1024 / 1024 < 2;
+        if (!isLt2M) {
+            message.error('Image must be smaller than 2MB!');
+        }
+        return isImage && isLt2M;
+    };
 
-        if (!name.trim() || !author.trim() || !priceMin.trim() || !priceMax.trim() || !categoryId || !vendorId) {
-            setError('Vui lòng điền đầy đủ tất cả các trường bắt buộc.');
-            return;
-        }
-        if (parseFloat(priceMin) > parseFloat(priceMax)) {
-            setError('Giá thấp nhất không được lớn hơn giá cao nhất.');
-            return;
-        }
-        if (!thumbnail) {
-            setError('Vui lòng chọn ảnh sản phẩm.');
+    const onFinish = async (values: any) => {
+        if (!thumbnailFile) {
+            message.error('Please upload a thumbnail image');
             return;
         }
 
+        setLoading(true);
         try {
             const formData = new FormData();
-            formData.append('name', name);
-            formData.append('author', author);
-            formData.append('priceMin', parseFloat(priceMin).toString());
-            formData.append('priceMax', parseFloat(priceMax).toString());
-            formData.append('categoryId', categoryId);
-            formData.append('vendorId', vendorId);
-            if (thumbnail) {
-                formData.append('thumbnail', thumbnail);
+            formData.append('name', values.name);
+            formData.append('description', values.description || '');
+            formData.append('author', values.author);
+            formData.append('categoryId', values.categoryId);
+            formData.append('vendorId', values.vendorId);
+            formData.append('thumbnail', thumbnailFile);
+            formData.append('priceRange[min]', values.priceMin);
+            formData.append('priceRange[max]', values.priceMax);
+
+            if (libraryFiles.length > 0) {
+                libraryFiles.forEach((file) => {
+                    formData.append('library', file);
+                });
             }
 
-            await productService.createProduct(formData);
-            setSuccess('Thêm sản phẩm thành công!');
-            setTimeout(() => {
-                navigate('/dashboard/products');
-            }, 1500);
-        } catch (err: unknown) {
-            console.error('Tạo sản phẩm thất bại:', err);
-            if (axios.isAxiosError(err)) {
-                if (
-                    err.response &&
-                    typeof err.response.data === 'object' &&
-                    err.response.data !== null &&
-                    'message' in err.response.data
-                ) {
-                    const errorMsg = (err.response.data as { message?: string }).message;
-                    if (typeof errorMsg === 'string') {
-                        setError(`Tạo sản phẩm thất bại: ${errorMsg}`);
-                    } else {
-                        setError('Tạo sản phẩm thất bại: Lỗi không xác định từ máy chủ.');
-                    }
-                } else {
-                    setError('Tạo sản phẩm thất bại: Lỗi mạng hoặc phản hồi không hợp lệ.');
-                }
-            } else if (err instanceof Error) {
-                setError(`Tạo sản phẩm thất bại: ${err.message}`);
-            } else {
-                setError('Tạo sản phẩm thất bại: Lỗi không xác định.');
-            }
+            await createProduct(formData);
+            message.success('Product added successfully');
+            navigate('/admin/products');
+        } catch (error: any) {
+            message.error(error.message || 'Failed to add product');
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
-        <div className='mx-auto max-w-xl p-6'>
-            <h2 className='mb-4 text-xl font-bold'>Thêm sản phẩm mới</h2>
-
-            {success && (
-                <div className='mb-4 rounded border border-green-400 bg-green-100 px-4 py-2 text-green-700'>
-                    {success}
-                </div>
-            )}
-
-            {error && (
-                <div className='mb-4 rounded border border-red-400 bg-red-100 px-4 py-2 text-red-700'>{error}</div>
-            )}
-
-            <form onSubmit={void handleSubmit} className='space-y-4'>
-                <input
-                    type='text'
-                    placeholder='Tên sản phẩm'
-                    value={name}
-                    onChange={(e) => {
-                        setName(e.target.value);
-                    }}
-                    required
-                    className='w-full rounded border px-4 py-2'
-                />
-                <input
-                    type='text'
-                    placeholder='Tác giả'
-                    value={author}
-                    onChange={(e) => {
-                        setAuthor(e.target.value);
-                    }}
-                    required
-                    className='w-full rounded border px-4 py-2'
-                />
-                <input
-                    type='number'
-                    placeholder='Giá thấp nhất'
-                    value={priceMin}
-                    onChange={(e) => {
-                        setPriceMin(e.target.value);
-                    }}
-                    required
-                    className='w-full rounded border px-4 py-2'
-                />
-                <input
-                    type='number'
-                    placeholder='Giá cao nhất'
-                    value={priceMax}
-                    onChange={(e) => {
-                        setPriceMax(e.target.value);
-                    }}
-                    required
-                    className='w-full rounded border px-4 py-2'
-                />
-
-                <select
-                    value={categoryId}
-                    onChange={(e) => {
-                        setCategoryId(e.target.value);
-                    }}
-                    required
-                    className='w-full rounded border px-4 py-2'
+        <div className='p-4'>
+            <h2 className='mb-4 text-2xl font-semibold'>Add New Product</h2>
+            <Form form={form} layout='vertical' onFinish={onFinish} className='max-w-2xl'>
+                <Form.Item
+                    name='name'
+                    label='Product Name'
+                    rules={[
+                        { required: true, message: 'Please input product name!' },
+                        { min: 15, message: 'Product name must be at least 15 characters' },
+                        { max: 100, message: 'Product name must be less than 100 characters' },
+                    ]}
                 >
-                    <option value=''>-- Chọn danh mục --</option>
-                    {categories.map((cat) => (
-                        <option key={cat._id} value={cat._id}>
-                            {cat.name}
-                        </option>
-                    ))}
-                </select>
-                <select
-                    value={vendorId}
-                    onChange={(e) => {
-                        setVendorId(e.target.value);
-                    }}
-                    required
-                    className='w-full rounded border px-4 py-2'
+                    <Input />
+                </Form.Item>
+
+                <Form.Item
+                    name='description'
+                    label='Description'
+                    rules={[{ max: 1000, message: 'Description must be less than 1000 characters' }]}
                 >
-                    <option value=''>-- Chọn nhà cung cấp --</option>
-                    {vendors.map((vendor) => (
-                        <option key={vendor._id} value={vendor._id}>
-                            {vendor.name}
-                        </option>
-                    ))}
-                </select>
-                <input
-                    type='file'
-                    accept='image/*'
-                    onChange={(e) => {
-                        setThumbnail(e.target.files?.[0] || null);
-                    }}
-                    className='w-full'
+                    <Input.TextArea rows={4} />
+                </Form.Item>
+
+                <Form.Item
+                    name='priceMin'
+                    label='Giá thấp nhất'
+                    rules={[{ required: true, message: 'Vui lòng nhập giá thấp nhất!' }]}
+                >
+                    <Input type='number' addonAfter='₫' />
+                </Form.Item>
+
+                <Form.Item
+                    name='priceMax'
+                    label='Giá cao nhất'
+                    rules={[{ required: true, message: 'Vui lòng nhập giá cao nhất!' }]}
+                >
+                    <Input type='number' addonAfter='₫' />
+                </Form.Item>
+
+                <Form.Item
+                    name='author'
+                    label='Author'
+                    rules={[{ required: true, message: 'Please input author name!' }]}
+                >
+                    <Input />
+                </Form.Item>
+
+                <Form.Item
+                    name='categoryId'
+                    label='Category'
+                    rules={[{ required: true, message: 'Please select a category!' }]}
+                >
+                    <Select>
+                        {categories.map((category) => (
+                            <Select.Option key={category._id} value={category._id}>
+                                {category.name}
+                            </Select.Option>
+                        ))}
+                    </Select>
+                </Form.Item>
+
+                <Form.Item
+                    name='vendorId'
+                    label='Vendor'
+                    rules={[{ required: true, message: 'Please select a vendor!' }]}
+                >
+                    <Select>
+                        {vendors.map((vendor) => (
+                            <Select.Option key={vendor._id} value={vendor._id}>
+                                {vendor.name}
+                            </Select.Option>
+                        ))}
+                    </Select>
+                </Form.Item>
+
+                <Form.Item
+                    label='Thumbnail'
                     required
-                />
-                <button type='submit' className='rounded bg-green-600 px-4 py-2 text-white hover:bg-green-700'>
-                    Thêm sản phẩm
-                </button>
-            </form>
+                    rules={[{ required: true, message: 'Please upload a thumbnail image!' }]}
+                >
+                    <Upload
+                        beforeUpload={(file) => {
+                            setThumbnailFile(file);
+                            return false;
+                        }}
+                        maxCount={1}
+                        listType='picture'
+                    >
+                        <Button icon={<UploadOutlined />}>Upload Thumbnail</Button>
+                    </Upload>
+                </Form.Item>
+
+                <Form.Item>
+                    <div className='flex gap-4'>
+                        <Button type='primary' htmlType='submit' loading={loading}>
+                            Add Product
+                        </Button>
+                        <Button onClick={() => navigate('/dashboard/products')}>Cancel</Button>
+                    </div>
+                </Form.Item>
+            </Form>
         </div>
     );
 };

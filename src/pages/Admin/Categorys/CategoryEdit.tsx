@@ -1,180 +1,104 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import categoryService from '../../../services/category.service';
+import { Form, Input, Upload, Button, Typography, message } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import axiosInstance from '../../../services/axiosInstance';
 import { ICategory } from '../../../types/category';
-import axios from 'axios';
 
-const CategoryEdit: React.FC = () => {
+const { Title } = Typography;
+
+const CategoryEdit = () => {
     const { id } = useParams<{ id: string }>();
+    const [form] = Form.useForm();
     const navigate = useNavigate();
-
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
-    const [parentId, setParentId] = useState('');
-    const [image, setImage] = useState<File | null>(null);
-    const [preview, setPreview] = useState<string | null>(null);
-    const [categories, setCategories] = useState<ICategory[]>([]);
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
-    const [loading, setLoading] = useState(true);
+    const [category, setCategory] = useState<ICategory | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        const fetchData = async (): Promise<void> => {
-            if (!id) {
-                setError('ID danh mục không hợp lệ.');
-                setLoading(false);
-                return;
-            }
+        const fetchCategory = async () => {
             try {
-                const allCatsResponse = await categoryService.getAllCategories();
-                setCategories(allCatsResponse.categories || []);
-
-                const categoryDetail = await categoryService.getCategoryDetail(id);
-                setName(categoryDetail.name);
-                setDescription(categoryDetail.description || '');
-                setParentId(categoryDetail.parentId || '');
-                setPreview(categoryDetail.image || null);
-            } catch (err) {
-                console.error('Lỗi khi tải dữ liệu danh mục:', err);
-                setError('Không thể tải danh mục. Vui lòng thử lại sau.');
-            } finally {
-                setLoading(false);
+                const res = await axiosInstance.get(`/categories/${id}`);
+                const data: ICategory = res.data.data;
+                setCategory(data);
+                form.setFieldsValue({
+                    name: data.name,
+                    description: data.description || '',
+                });
+            } catch (error) {
+                message.error('❌ Không thể tải danh mục');
             }
         };
+        if (id) fetchCategory();
+    }, [id, form]);
 
-        void fetchData();
-
-        return () => {
-            if (preview && image) {
-                URL.revokeObjectURL(preview);
-            }
-        };
-    }, [id, image, preview]);
-
-    const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setImage(file);
-            setPreview(URL.createObjectURL(file));
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-        e.preventDefault();
-        setError(null);
-        setSuccess(null);
-
-        if (!id) {
-            setError('Không tìm thấy ID danh mục để cập nhật.');
-            return;
-        }
-
+    const handleSubmit = async (values: any) => {
         const formData = new FormData();
-        formData.append('name', name);
-        formData.append('description', description);
-
-        if (parentId) {
-            formData.append('parentId', parentId);
-        }
-        if (image) {
-            formData.append('image', image);
+        formData.append('name', values.name);
+        formData.append('description', values.description || '');
+        if (imageFile) {
+            formData.append('image', imageFile);
         }
 
         try {
-            await categoryService.updateCategory(id, formData);
-            setSuccess('Cập nhật thành công!');
-            setTimeout(() => navigate('/dashboard/category'), 1000);
-        } catch (err: unknown) {
-            if (axios.isAxiosError(err)) {
-                if (
-                    err.response &&
-                    typeof err.response.data === 'object' &&
-                    err.response.data !== null &&
-                    'message' in err.response.data
-                ) {
-                    const errorMsg = (err.response.data as { message?: string }).message;
-                    if (typeof errorMsg === 'string') {
-                        setError(errorMsg);
-                    } else {
-                        setError('Lỗi không xác định từ máy chủ.');
-                    }
-                } else {
-                    setError('Lỗi mạng hoặc phản hồi không hợp lệ.');
-                }
-            } else {
-                setError('Lỗi không xác định khi cập nhật danh mục.');
-            }
+            setIsSubmitting(true);
+            await axiosInstance.put(`/categories/update/${id}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            message.success('✅ Cập nhật thành công');
+            navigate('/dashboard/category');
+        } catch (error: any) {
+            message.error('❌ Lỗi: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
-    if (loading) return <div className='py-10 text-center'>Đang tải dữ liệu...</div>;
-
-    if (error && !loading) return <div className='py-10 text-center text-red-500'>{error}</div>;
+    if (!category) return <div>Đang tải...</div>;
 
     return (
-        <div className='mx-auto max-w-xl p-6'>
-            <h2 className='mb-4 text-2xl font-bold'>Chỉnh sửa danh mục</h2>
+        <div className='mx-auto max-w-2xl p-4'>
+            <Title level={3}>Chỉnh sửa danh mục</Title>
+            <Form form={form} layout='vertical' onFinish={handleSubmit}>
+                <Form.Item
+                    label='Tên danh mục'
+                    name='name'
+                    rules={[{ required: true, message: 'Tên danh mục là bắt buộc' }]}
+                >
+                    <Input placeholder='Nhập tên danh mục' />
+                </Form.Item>
 
-            {success && <div className='mb-4 rounded bg-green-100 px-4 py-2 text-green-700'>{success}</div>}
-            {error && <div className='mb-4 rounded bg-red-100 px-4 py-2 text-red-700'>{error}</div>}
+                <Form.Item label='Mô tả' name='description'>
+                    <Input.TextArea rows={4} placeholder='Mô tả danh mục' />
+                </Form.Item>
 
-            <form onSubmit={(e) => void handleSubmit(e)} className='space-y-4'>
-                <div>
-                    <label className='block font-medium'>Tên danh mục</label>
-                    <input
-                        type='text'
-                        className='w-full rounded border p-2'
-                        value={name}
-                        onChange={(e) => {
-                            setName(e.target.value);
-                        }}
-                        required
-                    />
-                </div>
-
-                <div>
-                    <label className='block font-medium'>Mô tả</label>
-                    <textarea
-                        className='w-full rounded border p-2'
-                        value={description}
-                        onChange={(e) => {
-                            setDescription(e.target.value);
-                        }}
-                    />
-                </div>
-
-                <div>
-                    <label className='block font-medium'>Danh mục cha</label>
-                    <select
-                        className='w-full rounded border p-2'
-                        value={parentId}
-                        onChange={(e) => {
-                            setParentId(e.target.value);
+                <Form.Item label='Ảnh mới (tuỳ chọn)'>
+                    <Upload
+                        accept='image/*'
+                        beforeUpload={(file) => {
+                            setImageFile(file);
+                            return false;
                         }}
                     >
-                        <option value=''>-- Không có --</option>
+                        <Button icon={<UploadOutlined />}>Chọn ảnh</Button>
+                    </Upload>
+                    {!imageFile && category.image && (
+                        <div className='mt-2'>
+                            <img
+                                src={category.image}
+                                alt={category.name}
+                                className='h-32 w-32 rounded border object-cover'
+                            />
+                        </div>
+                    )}
+                </Form.Item>
 
-                        {categories.map(
-                            (cat) =>
-                                cat._id !== id && (
-                                    <option key={cat._id} value={cat._id}>
-                                        {cat.name}
-                                    </option>
-                                ),
-                        )}
-                    </select>
-                </div>
-
-                <div>
-                    <label className='block font-medium'>Hình ảnh</label>
-                    {preview && <img src={preview} alt='Preview' className='mb-2 h-20 w-20 rounded object-cover' />}
-                    <input type='file' onChange={handleImageChange} />
-                </div>
-
-                <button type='submit' className='rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700'>
-                    Lưu thay đổi
-                </button>
-            </form>
+                <Form.Item>
+                    <Button type='primary' htmlType='submit' loading={isSubmitting} disabled={isSubmitting}>
+                        {isSubmitting ? 'Đang cập nhật...' : 'Cập nhật'}
+                    </Button>
+                </Form.Item>
+            </Form>
         </div>
     );
 };

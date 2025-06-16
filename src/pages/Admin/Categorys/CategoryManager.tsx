@@ -1,134 +1,121 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Table, Button, Image, Space, Typography, message, Popconfirm } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import { ICategory } from '../../../types/category';
-import categoryService from '../../../services/category.service';
+import { getAllCategories, deleteCategory } from '../../../services/category.service';
 
-const formatDate = (isoDate: string): string => {
-    if (!isoDate) return '—';
-    return new Date(isoDate).toLocaleString('vi-VN', {
-        hour12: false,
-        dateStyle: 'short',
-        timeStyle: 'short',
-    });
-};
+const { Title } = Typography;
 
-const CategoryManager: React.FC = () => {
+const CategoryManager = () => {
     const [categories, setCategories] = useState<ICategory[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+    const navigate = useNavigate();
 
-    const fetchCategories = async (): Promise<void> => {
+    const fetchData = async () => {
         try {
-            setLoading(true);
-            const data = await categoryService.getAllCategories();
-            setCategories(data.categories || []);
-        } catch (err: unknown) {
-            console.error('Lỗi khi tải danh mục:', err);
-            setError('Không thể tải danh mục. Vui lòng thử lại.');
+            const data = await getAllCategories();
+            setCategories(data);
+        } catch (error) {
+            message.error('Lỗi khi tải danh sách danh mục');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchCategories();
+        fetchData();
     }, []);
 
-    // const handleDelete = async (id: string): Promise<void> => {
-    //     if (window.confirm('Bạn có chắc chắn muốn xóa danh mục này?')) {
-    //         try {
-    //             await categoryService.deleteCategory(id);
-    //             setSuccess('Xóa danh mục thành công!');
-    //             await fetchCategories(); // Tải lại danh sách sau khi xóa
-    //         } catch (err) {
-    //             console.error('Lỗi khi xóa danh mục:', err);
-    //             setError('Lỗi khi xóa danh mục. Vui lòng thử lại.');
-    //         }
-    //     }
-    // };
+    const handleDelete = async (id: string) => {
+        try {
+            await deleteCategory(id);
+            message.success('🗑️ Đã xoá danh mục');
+            setCategories((prev) => prev.filter((cat) => cat._id !== id));
+        } catch (error: any) {
+            message.error('❌ Lỗi khi xoá: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const columns: ColumnsType<ICategory> = [
+        {
+            title: '#',
+            key: 'index',
+            render: (_, __, index) => index + 1,
+        },
+        {
+            title: 'Tên danh mục',
+            dataIndex: 'name',
+            key: 'name',
+        },
+        {
+            title: 'Ảnh',
+            dataIndex: 'image',
+            key: 'image',
+            render: (image: string, record) =>
+                image ? (
+                    <Image src={image} alt={record.name} width={64} height={64} style={{ objectFit: 'cover' }} />
+                ) : (
+                    <div
+                        style={{
+                            width: 64,
+                            height: 64,
+                            backgroundColor: '#f0f0f0',
+                            textAlign: 'center',
+                            lineHeight: '64px',
+                            color: '#999',
+                        }}
+                    ></div>
+                ),
+        },
+        {
+            title: 'Mô tả',
+            dataIndex: 'description',
+            key: 'description',
+            render: (desc: string | null) => desc || '-',
+        },
+        {
+            title: 'Slug',
+            dataIndex: 'slug',
+            key: 'slug',
+        },
+        {
+            title: 'Hành động',
+            key: 'actions',
+            render: (_, record) => (
+                <Space>
+                    <Button type='primary' onClick={() => navigate(`/dashboard/category/update/${record._id}`)}>
+                        Sửa
+                    </Button>
+                    <Popconfirm
+                        title='Bạn có chắc muốn xoá danh mục này?'
+                        onConfirm={() => handleDelete(record._id)}
+                        okText='Xoá'
+                        cancelText='Huỷ'
+                    >
+                        <Button danger>Xoá</Button>
+                    </Popconfirm>
+                </Space>
+            ),
+        },
+    ];
 
     return (
-        <div className='p-6'>
-            <h2 className='mb-4 text-2xl font-bold'>Danh mục sản phẩm</h2>
-
-            <div className='mb-4'>
+        <div className='p-4'>
+            <Title level={3}>Quản lý danh mục</Title>
+            <div style={{ marginBottom: 16 }}>
                 <Link to='/dashboard/category/create'>
-                    <button className='rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700'>
-                        + Thêm danh mục
-                    </button>
+                    <Button type='primary'>➕ Thêm mới sản phẩm</Button>
                 </Link>
             </div>
-
-            {error && (
-                <div className='mb-4 rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700'>{error}</div>
-            )}
-
-            {loading ? (
-                <div className='py-10 text-center'>
-                    <div className='mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-blue-600' />
-                    <p className='mt-2 text-gray-600'>Đang tải danh mục...</p>
-                </div>
-            ) : (
-                <div className='overflow-x-auto'>
-                    <table className='min-w-full overflow-hidden rounded-lg border border-gray-200 bg-white text-sm shadow-md'>
-                        <thead className='bg-gray-100 text-left font-semibold text-gray-700'>
-                            <tr>
-                                <th className='border-b px-4 py-2'>ID</th>
-                                <th className='border-b px-4 py-2'>Tên</th>
-                                <th className='border-b px-4 py-2'>Slug</th>
-                                <th className='border-b px-4 py-2'>Hình ảnh</th>
-                                <th className='border-b px-4 py-2'>Tạo lúc</th>
-                                <th className='border-b px-4 py-2'>Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {categories.length > 0 ? (
-                                categories.map((category) => (
-                                    <tr key={category._id} className='hover:bg-gray-50'>
-                                        <td className='border-b px-4 py-2'>{category._id}</td>
-                                        <td className='border-b px-4 py-2'>{category.name}</td>
-                                        <td className='border-b px-4 py-2'>{category.slug}</td>
-                                        <td className='border-b px-4 py-2'>
-                                            {category.image ? (
-                                                <img
-                                                    src={category.image}
-                                                    alt={category.name}
-                                                    className='h-12 w-12 rounded object-cover'
-                                                />
-                                            ) : (
-                                                <span className='italic text-gray-400'>Không có ảnh</span>
-                                            )}
-                                        </td>
-                                        <td className='border-b px-4 py-2'>
-                                            {category.createdAt ? formatDate(category.createdAt) : '—'}
-                                        </td>
-                                        <td className='border-b px-4 py-2'>
-                                            <Link to={`/dashboard/category/update/${category._id}`}>
-                                                <button className='rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700'>
-                                                    ✏️ Chỉnh sửa
-                                                </button>
-                                            </Link>
-                                            {/* Thêm nút xóa nếu cần */}
-                                            {/* <button
-                                                onClick={() => void handleDelete(category._id)}
-                                                className='ml-2 rounded-md bg-red-600 px-4 py-2 text-sm text-white hover:bg-red-700'
-                                            >
-                                                🗑️ Xóa
-                                            </button> */}
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={6} className='py-4 text-center text-gray-500'>
-                                        Không có danh mục nào.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+            <Table
+                columns={columns}
+                dataSource={categories}
+                loading={loading}
+                rowKey='_id'
+                bordered
+                pagination={{ pageSize: 10 }}
+            />
         </div>
     );
 };

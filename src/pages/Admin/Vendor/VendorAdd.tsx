@@ -1,87 +1,51 @@
-// Fixes applied for VendorAdd.tsx
-// File: src/pages/Admin/Vendor/VendorAdd.tsx
-
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
-import vendorService from '../../../services/vendor.service';
+import { Form, Input, Button, Typography, message } from 'antd';
+import axiosInstance from '../../../services/axiosInstance';
 
-const VendorAdd: React.FC = () => {
+const { Title } = Typography;
+
+const VendorAdd = () => {
+    const [form] = Form.useForm();
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const navigate = useNavigate();
-    const [name, setName] = useState('');
-    const [description, setDescription] = useState('');
-    const [error, setError] = useState<string | null>(null);
-    const [success, setSuccess] = useState<string | null>(null);
 
-    const handleSubmit = async (e: React.FormEvent): Promise<void> => {
-        e.preventDefault();
-        setError(null);
-        setSuccess(null);
-
-        if (!name.trim()) {
-            setError('Tên nhà cung cấp là bắt buộc');
-            return;
-        }
-
+    const handleSubmit = async (values: { name: string; description?: string }) => {
         try {
-            await vendorService.createVendor({ name, description });
-            setSuccess('Thêm nhà cung cấp thành công!');
-            setTimeout(() => {
-                navigate('/dashboard/vendor');
-            }, 1500);
-        } catch (error: unknown) {
-            if (axios.isAxiosError(error) && error.response?.data?.message) {
-                setError(String(error.response.data.message));
-            } else {
-                setError('Lỗi khi thêm nhà cung cấp.');
-            }
+            setIsSubmitting(true);
+            await axiosInstance.post('/vendors/create', values);
+            message.success('✅ Thêm nhà cung cấp thành công');
+            form.resetFields();
+            navigate('/dashboard/vendor');
+        } catch (error: any) {
+            message.error('❌ Lỗi: ' + (error.response?.data?.message || error.message));
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
     return (
-        <div className='mx-auto max-w-xl p-6'>
-            <h2 className='mb-4 text-2xl font-bold'>Thêm nhà cung cấp mới</h2>
+        <div className='mx-auto max-w-2xl p-4'>
+            <Title level={3}>Thêm nhà cung cấp</Title>
+            <Form form={form} layout='vertical' onFinish={handleSubmit}>
+                <Form.Item
+                    label='Tên nhà cung cấp'
+                    name='name'
+                    rules={[{ required: true, message: 'Tên nhà cung cấp là bắt buộc' }]}
+                >
+                    <Input placeholder='Nhập tên nhà cung cấp' />
+                </Form.Item>
 
-            {success && (
-                <div className='mb-4 rounded border border-green-400 bg-green-100 px-4 py-2 text-green-700'>
-                    {success}
-                </div>
-            )}
-            {error && (
-                <div className='mb-4 rounded border border-red-400 bg-red-100 px-4 py-2 text-red-700'>{error}</div>
-            )}
+                <Form.Item label='Mô tả' name='description'>
+                    <Input.TextArea rows={4} placeholder='Mô tả (không bắt buộc)' />
+                </Form.Item>
 
-            <form onSubmit={(e) => void handleSubmit(e)} className='space-y-4'>
-                <div>
-                    <label className='mb-1 block font-medium'>Tên nhà cung cấp</label>
-                    <input
-                        type='text'
-                        className='w-full rounded border border-gray-300 p-2'
-                        value={name}
-                        onChange={(e) => {
-                            setName(e.target.value);
-                        }}
-                        required
-                    />
-                </div>
-
-                <div>
-                    <label className='mb-1 block font-medium'>Mô tả</label>
-                    <textarea
-                        className='w-full rounded border border-gray-300 p-2'
-                        value={description}
-                        onChange={(e) => {
-                            setDescription(e.target.value);
-                        }}
-                    />
-                </div>
-
-                <div>
-                    <button type='submit' className='rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700'>
-                        Thêm nhà cung cấp
-                    </button>
-                </div>
-            </form>
+                <Form.Item>
+                    <Button type='primary' htmlType='submit' loading={isSubmitting} disabled={isSubmitting}>
+                        {isSubmitting ? 'Đang thêm...' : 'Thêm'}
+                    </Button>
+                </Form.Item>
+            </Form>
         </div>
     );
 };

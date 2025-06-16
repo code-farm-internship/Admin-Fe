@@ -1,153 +1,136 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Table, Button, Image, Tag, Typography, Space, message } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
+import { useNavigate, Link } from 'react-router-dom';
 import { IProduct } from '../../../types/product';
-import productService from '../../../services/product.service';
-import axios from 'axios';
+import { getAllProducts, toggleProductVisibility } from '../../../services/product.service';
 
-const formatDate = (isoDate: string | undefined): string => {
-    if (!isoDate) return '—';
-    return new Date(isoDate).toLocaleString('vi-VN', {
-        hour12: false,
-        dateStyle: 'short',
-        timeStyle: 'short',
-    });
-};
+const { Title } = Typography;
 
-const ProductManager: React.FC = () => {
+const ProductManager = () => {
     const [products, setProducts] = useState<IProduct[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
-    const fetchProducts = async (): Promise<void> => {
+    const fetchData = async () => {
         try {
-            setLoading(true);
-            const data = await productService.getAllProducts();
-            setProducts(data.products || []);
-        } catch (err: unknown) {
-            console.error('Lỗi khi tải sản phẩm:', err);
-            if (axios.isAxiosError(err)) {
-                if (
-                    err.response &&
-                    typeof err.response.data === 'object' &&
-                    err.response.data !== null &&
-                    'message' in err.response.data
-                ) {
-                    const errorMsg = (err.response.data as { message?: string }).message;
-                    if (typeof errorMsg === 'string') {
-                        setError(`Không thể tải sản phẩm: ${errorMsg}`);
-                    } else {
-                        setError('Không thể tải sản phẩm: Lỗi không xác định từ máy chủ.');
-                    }
-                } else {
-                    setError('Không thể tải sản phẩm: Lỗi mạng hoặc phản hồi không hợp lệ.');
-                }
-            } else {
-                setError('Không thể tải sản phẩm: Lỗi không xác định.');
-            }
+            const data = await getAllProducts();
+            setProducts(data.products);
+        } catch (error) {
+            message.error('Lỗi khi tải danh sách sản phẩm');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        void fetchProducts();
+        fetchData();
     }, []);
 
-    return (
-        <div className='p-6'>
-            <h2 className='mb-4 text-2xl font-bold'>Danh sách sản phẩm</h2>
+    const handleToggle = async (id: string) => {
+        const confirmToggle = window.confirm('Bạn có chắc muốn thay đổi trạng thái hiển thị của sản phẩm này?');
+        if (!confirmToggle) return;
 
-            <div className='mb-4'>
+        try {
+            const newStatus = await toggleProductVisibility(id);
+            setProducts((prev) =>
+                prev.map((product) => (product._id === id ? { ...product, isAvailable: newStatus } : product)),
+            );
+            message.success(`✅ Đã ${newStatus ? 'hiện' : 'ẩn'} sản phẩm`);
+        } catch (error: any) {
+            message.error('❌ Lỗi khi thay đổi trạng thái: ' + (error.response?.data?.message || error.message));
+        }
+    };
+
+    const columns: ColumnsType<IProduct> = [
+        {
+            title: '#',
+            dataIndex: '_id',
+            key: 'index',
+            render: (_, __, index) => index + 1,
+        },
+        {
+            title: 'Ảnh',
+            dataIndex: 'thumbnail',
+            key: 'thumbnail',
+            render: (url, record) =>
+                url ? (
+                    <Image width={48} height={48} src={url} alt={record.name} style={{ objectFit: 'cover' }} />
+                ) : (
+                    <div
+                        style={{
+                            width: 48,
+                            height: 48,
+                            background: '#f0f0f0',
+                            textAlign: 'center',
+                            lineHeight: '48px',
+                            color: '#999',
+                        }}
+                    >
+                        No image
+                    </div>
+                ),
+        },
+        {
+            title: 'Tên',
+            dataIndex: 'name',
+            key: 'name',
+        },
+        {
+            title: 'Tác giả',
+            dataIndex: 'author',
+            key: 'author',
+        },
+        {
+            title: 'Giá',
+            dataIndex: 'priceRange',
+            key: 'priceRange',
+            render: (range) => `${range.min.toLocaleString()}₫ - ${range.max.toLocaleString()}₫`,
+        },
+        {
+            title: 'Danh mục',
+            dataIndex: 'categoryId',
+            key: 'categoryId',
+            render: (category: any) => category?.name || '-',
+        },
+        {
+            title: 'Nhà cung cấp',
+            dataIndex: 'vendorId',
+            key: 'vendorId',
+            render: (vendor: any) => vendor?.name || '-',
+        },
+        {
+            title: 'Trạng thái',
+            dataIndex: 'isAvailable',
+            key: 'isAvailable',
+            render: (isAvailable: boolean) =>
+                isAvailable ? <Tag color='green'>Hiển thị</Tag> : <Tag color='red'>Đã ẩn</Tag>,
+        },
+        {
+            title: 'Thao tác',
+            key: 'actions',
+            render: (_, record) => (
+                <Space>
+                    <Button type='primary' onClick={() => navigate(`/dashboard/products/update/${record._id}`)}>
+                        Sửa
+                    </Button>
+                    <Button danger={!record.isAvailable} onClick={() => handleToggle(record._id)}>
+                        {record.isAvailable ? 'Ẩn' : 'Hiện'}
+                    </Button>
+                </Space>
+            ),
+        },
+    ];
+
+    return (
+        <div className='p-4'>
+            <Title level={3}>Quản lý sản phẩm</Title>
+            <div style={{ marginBottom: 16 }}>
                 <Link to='/dashboard/products/create'>
-                    <button className='rounded-md bg-green-600 px-4 py-2 text-sm text-white hover:bg-green-700'>
-                        + Thêm sản phẩm
-                    </button>
+                    <Button type='primary'>➕ Thêm mới sản phẩm</Button>
                 </Link>
             </div>
-
-            {error && (
-                <div className='mb-4 rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700'>{error}</div>
-            )}
-
-            {loading ? (
-                <div className='py-10 text-center'>
-                    <div className='mx-auto h-10 w-10 animate-spin rounded-full border-b-2 border-green-600' />
-                    <p className='mt-2 text-gray-600'>Đang tải sản phẩm...</p>
-                </div>
-            ) : (
-                <div className='overflow-x-auto'>
-                    <table className='min-w-full overflow-hidden rounded-lg border border-gray-200 bg-white text-sm shadow-md'>
-                        <thead className='bg-gray-100 text-left font-semibold text-gray-700'>
-                            <tr>
-                                <th className='border-b px-4 py-2'>Tên</th>
-                                <th className='border-b px-4 py-2'>Ảnh</th>
-                                <th className='border-b px-4 py-2'>Tác giả</th>
-                                <th className='border-b px-4 py-2'>Danh mục</th>
-                                <th className='border-b px-4 py-2'>Nhà cung cấp</th>
-                                <th className='border-b px-4 py-2'>Giá</th>
-                                <th className='border-b px-4 py-2'>Đã bán</th>
-                                <th className='border-b px-4 py-2'>Mô tả</th>
-                                <th className='border-b px-4 py-2'>Trạng thái</th>
-                                <th className='border-b px-4 py-2'>Tạo lúc</th>
-                                <th className='border-b px-4 py-2'>Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {products.length > 0 ? (
-                                products.map((product) => (
-                                    <tr key={product._id} className='hover:bg-gray-50'>
-                                        <td className='border-b px-4 py-2'>{product.name}</td>
-                                        <td className='border-b px-4 py-2'>
-                                            {product.thumbnail ? (
-                                                <img
-                                                    src={product.thumbnail}
-                                                    alt={product.name}
-                                                    className='h-12 w-12 rounded object-cover'
-                                                />
-                                            ) : (
-                                                <span className='italic text-gray-400'>Không có ảnh</span>
-                                            )}
-                                        </td>
-                                        <td className='border-b px-4 py-2'>{product.author}</td>
-                                        <td className='border-b px-4 py-2'>{product.categoryId?.name || '—'}</td>
-                                        <td className='border-b px-4 py-2'>{product.vendorId?.name || '—'}</td>
-                                        <td className='border-b px-4 py-2'>
-                                            {product.priceRange.min}₫ - {product.priceRange.max}₫
-                                        </td>
-                                        <td className='border-b px-4 py-2'>{product.sold}</td>
-                                        <td className='border-b px-4 py-2'>{product.description}</td>
-                                        <td className='border-b px-4 py-2'>{product.status}</td>
-                                        <td className='border-b px-4 py-2'>
-                                            {product.createdAt ? formatDate(product.createdAt) : '—'}
-                                        </td>
-
-                                        <td className='space-x-2 border-b px-4 py-2'>
-                                            <Link to={`/dashboard/products/edit/${product._id}`}>
-                                                <button className='rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700'>
-                                                    ✏️
-                                                </button>
-                                            </Link>
-                                            {/* Có thể thêm nút xóa sản phẩm tại đây */}
-                                            {/* <button
-                        onClick={() => void handleDelete(product._id)}
-                        className="ml-2 rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700"
-                      >
-                        🗑️
-                      </button> */}
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan={11} className='py-4 text-center text-gray-500'>
-                                        Không có sản phẩm nào.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+            <Table columns={columns} dataSource={products} rowKey='_id' loading={loading} bordered />
         </div>
     );
 };
