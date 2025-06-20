@@ -1,18 +1,18 @@
-import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Layout, Menu } from 'antd';
+import { PRIVATE_ROUTES } from '@/constants/routes';
 import {
-    HomeOutlined,
-    BarChartOutlined,
     AppstoreOutlined,
-    FolderOpenOutlined,
+    BarChartOutlined,
     FileTextOutlined,
-    TeamOutlined,
-    MessageOutlined,
-    SlidersOutlined,
+    FolderOpenOutlined,
     GiftOutlined,
+    HomeOutlined,
+    MessageOutlined,
     ShopOutlined,
+    SlidersOutlined,
+    TeamOutlined,
 } from '@ant-design/icons';
+import { Layout, Menu } from 'antd';
+import { Link, useLocation } from 'react-router-dom';
 
 const { Sider } = Layout;
 
@@ -20,16 +20,27 @@ const AdminSidebar = ({ collapsed }: { collapsed: boolean }) => {
     const location = useLocation();
 
     const menuItems = [
-        { key: '/dashboard', icon: <HomeOutlined />, label: 'Tổng quan' },
-        { key: '/dashboard/order-statistics', icon: <BarChartOutlined />, label: 'Thống kê' },
-        { key: '/dashboard/products', icon: <AppstoreOutlined />, label: 'Sản phẩm' },
-        { key: '/dashboard/category', icon: <FolderOpenOutlined />, label: 'Danh mục' },
-        { key: '/dashboard/orders', icon: <FileTextOutlined />, label: 'Đơn hàng' },
-        { key: '/dashboard/users', icon: <TeamOutlined />, label: 'Người dùng' },
-        { key: '/dashboard/reviews', icon: <MessageOutlined />, label: 'Đánh giá' },
-        { key: '/dashboard/product-variants', icon: <SlidersOutlined />, label: 'Biến thể' },
-        { key: '/dashboard/vouchers', icon: <GiftOutlined />, label: 'Mã giảm giá' },
-        { key: '/dashboard/vendor', icon: <ShopOutlined />, label: 'Nhà cung cấp' },
+        { key: '/admin', icon: <HomeOutlined />, label: <Link to='/admin'>Tổng quan</Link> },
+        { key: '/admin/order-statistics', icon: <BarChartOutlined />, label: 'Thống kê' },
+        { key: '/admin/orders', icon: <FileTextOutlined />, label: 'Quản lý đơn hàng' },
+        { key: '/admin/products', icon: <AppstoreOutlined />, label: 'Quản lý sản phẩm' },
+        { key: '/admin/product-variants', icon: <SlidersOutlined />, label: 'Quản lý biến thể' },
+        { key: '/admin/vouchers', icon: <GiftOutlined />, label: 'Quản lý mã giảm giá' },
+        {
+            key: '/admin/discount',
+            icon: <ShopOutlined />,
+            label: <Link to={PRIVATE_ROUTES.DISCOUNT.All}>Quản lý khuyến mãi</Link>,
+            children: [
+                {
+                    key: '/admin/discount/create',
+                    label: <Link to={PRIVATE_ROUTES.DISCOUNT.CREATE}>Tạo mới giảm giá</Link>,
+                },
+            ],
+        },
+        { key: '/admin/users', icon: <TeamOutlined />, label: 'Quản lý người dùng' },
+        { key: '/admin/category', icon: <FolderOpenOutlined />, label: 'Quản lý danh mục' },
+        { key: '/admin/vendor', icon: <ShopOutlined />, label: 'Quản lý nhà cung cấp' },
+        { key: '/admin/reviews', icon: <MessageOutlined />, label: 'Quản lý đánh giá' },
     ];
 
     return (
@@ -43,11 +54,7 @@ const AdminSidebar = ({ collapsed }: { collapsed: boolean }) => {
                 mode='inline'
                 selectedKeys={[location.pathname]}
                 style={{ backgroundColor: '#001529' }}
-                items={menuItems.map((item) => ({
-                    key: item.key,
-                    icon: item.icon,
-                    label: <Link to={item.key}>{item.label}</Link>,
-                }))}
+                items={menuItems}
             />
         </Sider>
     );

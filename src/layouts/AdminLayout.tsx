@@ -32,7 +32,6 @@ const AdminLayout = () => {
                             background: '#ffffff',
                             borderRadius: '12px',
                             padding: '24px',
-                            height: 'calc(100vh - 64px - 48px - 48px)',
                             overflow: 'auto',
                             boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)',
                         }}

@@ -1,27 +1,28 @@
 import { Navigate } from 'react-router-dom';
 import AdminLayout from '../layouts/AdminLayout';
-import Dashboard from '../pages/Admin/Dashboard';
+import CategoryAdd from '../pages/Admin/Categorys/CategoryAdd';
+import CategoryEdit from '../pages/Admin/Categorys/CategoryEdit';
 import CategoryManager from '../pages/Admin/Categorys/CategoryManager';
+import Dashboard from '../pages/Admin/Dashboard';
 import OrderManager from '../pages/Admin/OrderManager';
 import OrderStatistics from '../pages/Admin/OrderStatistics';
+import ProductAdd from '../pages/Admin/Products/ProductAdd';
+import ProductEdit from '../pages/Admin/Products/ProductEdit';
 import ProductManager from '../pages/Admin/Products/ProductManager';
 import ProductVariantManager from '../pages/Admin/ProductVariantManager';
 import ReviewManager from '../pages/Admin/ReviewManager';
 import UserManager from '../pages/Admin/UserManager';
-import VoucherManager from '../pages/Admin/VoucherManager';
-import CategoryAdd from '../pages/Admin/Categorys/CategoryAdd';
-import CategoryEdit from '../pages/Admin/Categorys/CategoryEdit';
-import VendorManager from '../pages/Admin/Vendor/VendorManager';
 import VendorAdd from '../pages/Admin/Vendor/VendorAdd';
 import VendorEdit from '../pages/Admin/Vendor/VendorEdit';
-import ProductAdd from '../pages/Admin/Products/ProductAdd';
-import ProductEdit from '../pages/Admin/Products/ProductEdit';
+import VendorManager from '../pages/Admin/Vendor/VendorManager';
+import VoucherManager from '../pages/Admin/VoucherManager';
+import { CreateDiscountPage, ManagerDiscountPage, Suspense, UpdateDiscountPage } from './LazyRoutes';
 
 // import ProtectedRouteAdmin from '../components/ProtectedRouteAdmin';
 
 export const privateRoutes = [
     {
-        path: '/dashboard',
+        path: '/admin',
         element: (
             // <ProtectedRouteAdmin>
             <AdminLayout />
@@ -56,7 +57,38 @@ export const privateRoutes = [
             { path: 'products/create', element: <ProductAdd /> },
             { path: 'products/update/:id', element: <ProductEdit /> },
 
-            { path: '*', element: <Navigate to='/404' /> },
+            // discount
+            {
+                path: 'discount',
+                children: [
+                    {
+                        index: true,
+                        element: (
+                            <Suspense>
+                                <ManagerDiscountPage />
+                            </Suspense>
+                        ),
+                    },
+                    {
+                        path: 'create',
+                        element: (
+                            <Suspense>
+                                <CreateDiscountPage />
+                            </Suspense>
+                        ),
+                    },
+                    {
+                        path: 'edit/:id',
+                        element: (
+                            <Suspense>
+                                <UpdateDiscountPage />
+                            </Suspense>
+                        ),
+                    },
+                ],
+            },
+
+            { path: '*', element: <Navigate to='/404' replace={false} /> },
         ],
     },
 ];

@@ -52,6 +52,7 @@ export default [
             'react/react-in-jsx-scope': 'off',
             'react/jsx-key': 'error',
             'react/no-unknown-property': ['error', { ignore: ['css'] }],
+            'react/prop-types': 'off',
             'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
             '@typescript-eslint/no-explicit-any': 'warn',
             '@typescript-eslint/no-non-null-assertion': 'off',
@@ -68,7 +69,7 @@ export default [
                 {
                     arrowParens: 'always',
                     semi: true,
-                    trailingComma: 'all',
+                    trailingComma: 'es5',
                     tabWidth: 4,
                     endOfLine: 'auto',
                     useTabs: false,
