@@ -1,5 +1,7 @@
 import axiosInstance from './axiosInstance';
-import { IProduct } from '../types/product';
+import { IProduct, ISelectProductVariant } from '../types/product';
+import { get } from '@/lib/api';
+import { IPaginateResponse, IParams } from '@/types/api';
 
 export const getAllProducts = async (): Promise<{ products: IProduct[] }> => {
     try {
@@ -64,4 +66,9 @@ export const getProductById = async (id: string): Promise<IProduct> => {
         console.error(`Error fetching product with ID ${id}:`, error);
         throw new Error('Failed to fetch product');
     }
+};
+
+export const getAllProductsVariant = async (params: IParams) => {
+    const res = await get<IPaginateResponse<ISelectProductVariant[]>>('/products/all', params);
+    return res.data;
 };

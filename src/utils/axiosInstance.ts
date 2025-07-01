@@ -1,10 +1,13 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { envVars } from '../config/env.config';
+import queryString from 'query-string';
+import { IParams } from '@/types/api';
 
 const axiosOptions: AxiosRequestConfig = {
     baseURL: envVars.API_URL,
     timeout: 20000,
     withCredentials: true,
+    paramsSerializer: (params: IParams) => queryString.stringify(params),
 };
 
 export const instance = axios.create(axiosOptions);
@@ -13,7 +16,7 @@ instance.interceptors.request.use(
     (config) => config,
     (error: unknown) => {
         return Promise.reject(error);
-    },
+    }
 );
 
 instance.interceptors.response.use(
@@ -39,5 +42,5 @@ instance.interceptors.response.use(
             console.error('Unknown error in Axios response interceptor.');
         }
         return Promise.reject(error);
-    },
+    }
 );

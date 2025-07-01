@@ -1,5 +1,6 @@
 import { DiscountType } from '@/types/discount';
 
+// discount
 export const MIN_PERCENT_DISCOUNT = 1;
 export const MAX_PERCENT_DISCOUNT = 99;
 export const MIN_FIXED_DISCOUNT = 1000;
@@ -14,3 +15,8 @@ export const discountTypeItems = [
         label: 'Cố định',
     },
 ];
+
+// variant
+
+export const MIN_PRICE = 1000;
+export const MAX_PRICE = 10000000;

@@ -4,6 +4,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useNavigate, Link } from 'react-router-dom';
 import { IProduct } from '../../../types/product';
 import { getAllProducts, toggleProductVisibility } from '../../../services/product.service';
+import { PRIVATE_ROUTES } from '@/constants/routes';
 
 const { Title } = Typography;
 
@@ -34,7 +35,7 @@ const ProductManager = () => {
         try {
             const newStatus = await toggleProductVisibility(id);
             setProducts((prev) =>
-                prev.map((product) => (product._id === id ? { ...product, isAvailable: newStatus } : product)),
+                prev.map((product) => (product._id === id ? { ...product, isAvailable: newStatus } : product))
             );
             message.success(`✅ Đã ${newStatus ? 'hiện' : 'ẩn'} sản phẩm`);
         } catch (error: any) {
@@ -111,11 +112,19 @@ const ProductManager = () => {
             key: 'actions',
             render: (_, record) => (
                 <Space>
-                    <Button type='primary' onClick={() => navigate(`/dashboard/products/update/${record._id}`)}>
+                    <Button type='primary' onClick={() => navigate(`/product/update/${record._id}`)}>
                         Sửa
                     </Button>
                     <Button danger={!record.isAvailable} onClick={() => handleToggle(record._id)}>
                         {record.isAvailable ? 'Ẩn' : 'Hiện'}
+                    </Button>
+                    <Button
+                        type='link'
+                        onClick={() => {
+                            navigate(`/${PRIVATE_ROUTES.VARIANT.All}/${record._id}`);
+                        }}
+                    >
+                        Biến thể
                     </Button>
                 </Space>
             ),

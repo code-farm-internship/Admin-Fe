@@ -1,7 +1,18 @@
 export const PRIVATE_ROUTES = {
     DISCOUNT: {
-        All: '/admin/discount',
-        CREATE: '/admin/discount/create',
-        UPDATE: '/admin/discount/update',
+        All: '/',
+        CREATE: 'discount/create',
+        UPDATE: 'discount/update',
+    },
+    VARIANT: {
+        All: 'variant',
+        CREATE: 'variant/create',
+        UPDATE: 'variant/update',
+    },
+
+    PRODUCT: {
+        All: 'product',
+        CREATE: 'product/create',
+        UPDATE: 'product/update',
     },
 };

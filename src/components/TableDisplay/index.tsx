@@ -7,7 +7,7 @@ interface ITableDisplayProps<T> {
     dataSource?: T[];
     columns: TableColumnsType<T>;
     totalDocs?: number;
-    onFilter: (filters: Record<string, FilterValue | null>, sorter: SorterResult<T> | SorterResult<T>[]) => void;
+    onFilter?: (filters: Record<string, FilterValue | null>, sorter: SorterResult<T> | SorterResult<T>[]) => void;
     onSelectPaginateChange: (page: number) => void;
     currentPage: number;
 }
@@ -21,7 +21,9 @@ const TableDisplay = <T extends object>({
     currentPage,
 }: ITableDisplayProps<T>) => {
     const onChange: TableProps<T>['onChange'] = (_, filters, sorter) => {
-        onFilter(filters, sorter);
+        if (onFilter) {
+            onFilter(filters, sorter);
+        }
     };
 
     return (

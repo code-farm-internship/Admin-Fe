@@ -1,6 +1,6 @@
 import { get, post, put } from '@/lib/api';
 import { IPaginateResponse, IParams } from '@/types/api';
-import { IDiscountCreatePayload, IDiscountResponse } from '@/types/discount';
+import { IDiscountPayload, IDiscountResponse } from '@/types/discount';
 
 export const discountService = {
     getAllDiscount(params: IParams) {
@@ -11,11 +11,11 @@ export const discountService = {
         const data = get<IDiscountResponse>(`/discounts/${id}`);
         return data;
     },
-    createDiscount(body: IDiscountCreatePayload) {
+    createDiscount(body: IDiscountPayload) {
         const data = post<null>('/discounts', body);
         return data;
     },
-    updateDiscount(body: IDiscountCreatePayload, id: string) {
+    updateDiscount(body: IDiscountPayload, id: string) {
         const data = put<null>(`/discounts/${id}`, body);
         return data;
     },

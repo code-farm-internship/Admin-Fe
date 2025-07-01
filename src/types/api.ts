@@ -4,6 +4,7 @@ export interface IParams {
     limit?: string;
     sort?: string;
     fields?: string;
+    search?: string;
 }
 
 export interface IPaginateResponse<T> {
@@ -11,4 +12,12 @@ export interface IPaginateResponse<T> {
     limit: number;
     totalDocs: number;
     totalPages: number;
+}
+
+export interface IErrorResponse {
+    response: {
+        data: {
+            message: string;
+        };
+    };
 }

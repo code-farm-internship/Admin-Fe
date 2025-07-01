@@ -1,3 +1,4 @@
+import { PRIVATE_ROUTES } from '@/constants/routes';
 import { Navigate } from 'react-router-dom';
 import AdminLayout from '../layouts/AdminLayout';
 import CategoryAdd from '../pages/Admin/Categorys/CategoryAdd';
@@ -6,9 +7,6 @@ import CategoryManager from '../pages/Admin/Categorys/CategoryManager';
 import Dashboard from '../pages/Admin/Dashboard';
 import OrderManager from '../pages/Admin/OrderManager';
 import OrderStatistics from '../pages/Admin/OrderStatistics';
-import ProductAdd from '../pages/Admin/Products/ProductAdd';
-import ProductEdit from '../pages/Admin/Products/ProductEdit';
-import ProductManager from '../pages/Admin/Products/ProductManager';
 import ProductVariantManager from '../pages/Admin/ProductVariantManager';
 import ReviewManager from '../pages/Admin/ReviewManager';
 import UserManager from '../pages/Admin/UserManager';
@@ -16,13 +14,24 @@ import VendorAdd from '../pages/Admin/Vendor/VendorAdd';
 import VendorEdit from '../pages/Admin/Vendor/VendorEdit';
 import VendorManager from '../pages/Admin/Vendor/VendorManager';
 import VoucherManager from '../pages/Admin/VoucherManager';
-import { CreateDiscountPage, ManagerDiscountPage, Suspense, UpdateDiscountPage } from './LazyRoutes';
+import {
+    CreateDiscountPage,
+    CreateProductPage,
+    CreateVariantPage,
+    ManagerDiscountPage,
+    ManagerProductPage,
+    ManagerVariantPage,
+    Suspense,
+    UpdateDiscountPage,
+    UpdateProductPage,
+    UpdateVariantPage,
+} from './LazyRoutes';
 
 // import ProtectedRouteAdmin from '../components/ProtectedRouteAdmin';
 
 export const privateRoutes = [
     {
-        path: '/admin',
+        path: '/',
         element: (
             // <ProtectedRouteAdmin>
             <AdminLayout />
@@ -53,42 +62,82 @@ export const privateRoutes = [
             { path: 'vendor/update/:id', element: <VendorEdit /> },
 
             // product
-            { path: 'products', element: <ProductManager /> },
-            { path: 'products/create', element: <ProductAdd /> },
-            { path: 'products/update/:id', element: <ProductEdit /> },
+            {
+                path: 'product',
+                element: (
+                    <Suspense>
+                        <ManagerProductPage />
+                    </Suspense>
+                ),
+            },
+            {
+                path: PRIVATE_ROUTES.PRODUCT.CREATE,
+                element: (
+                    <Suspense>
+                        <CreateProductPage />
+                    </Suspense>
+                ),
+            },
+            {
+                path: `${PRIVATE_ROUTES.PRODUCT.UPDATE}/:id`,
+                element: (
+                    <Suspense>
+                        <UpdateProductPage />
+                    </Suspense>
+                ),
+            },
+            // @Variant,
+            {
+                path: `${PRIVATE_ROUTES.VARIANT.CREATE}/:productId`,
+                element: (
+                    <Suspense>
+                        <CreateVariantPage />
+                    </Suspense>
+                ),
+            },
+            {
+                path: `${PRIVATE_ROUTES.VARIANT.UPDATE}/:productId`,
+                element: (
+                    <Suspense>
+                        <UpdateVariantPage />
+                    </Suspense>
+                ),
+            },
+            {
+                path: `${PRIVATE_ROUTES.VARIANT.All}/:productId`,
+                element: (
+                    <Suspense>
+                        <ManagerVariantPage />
+                    </Suspense>
+                ),
+            },
 
             // discount
             {
                 path: 'discount',
-                children: [
-                    {
-                        index: true,
-                        element: (
-                            <Suspense>
-                                <ManagerDiscountPage />
-                            </Suspense>
-                        ),
-                    },
-                    {
-                        path: 'create',
-                        element: (
-                            <Suspense>
-                                <CreateDiscountPage />
-                            </Suspense>
-                        ),
-                    },
-                    {
-                        path: 'edit/:id',
-                        element: (
-                            <Suspense>
-                                <UpdateDiscountPage />
-                            </Suspense>
-                        ),
-                    },
-                ],
+                element: (
+                    <Suspense>
+                        <ManagerDiscountPage />
+                    </Suspense>
+                ),
             },
-
-            { path: '*', element: <Navigate to='/404' replace={false} /> },
+            {
+                path: 'create',
+                element: (
+                    <Suspense>
+                        <CreateDiscountPage />
+                    </Suspense>
+                ),
+            },
+            {
+                path: 'edit/:id',
+                element: (
+                    <Suspense>
+                        <UpdateDiscountPage />
+                    </Suspense>
+                ),
+            },
         ],
     },
+    { path: '*', element: <Navigate to='/404' replace={false} /> },
 ];
